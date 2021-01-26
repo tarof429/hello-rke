@@ -1,0 +1,12 @@
+# kustomization.yaml
+namespace: ingress-nginx
+resources:
+  - namespace.yaml
+bases:
+  - base
+images:
+  - name: quay.io/kubernetes-ingress-controller/nginx-ingress-controller
+    newTag: master
+patchesStrategicMerge:
+  - service.yaml
+  - configs/nginx.conf.yaml

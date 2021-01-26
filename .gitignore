@@ -1,0 +1,7 @@
+vagrant/.vagrant
+vagrant/hellorke.tar
+metallb/secret.yaml
+test.md
+cluster.rkestate
+cluster.yaml
+kube_config_cluster.yml
