@@ -1,5 +1,9 @@
 # Readme for Hello-RKE
 
+## Introduction
+
+This example is based on a video by Adrian Goins at https://www.youtube.com/watch?v=iqVt5mbvlJ0&t=272s to setup metallb with Nginx and rancher. Some steps were added/modified for rke.
+
 ## Requirements
 
 - vagrant 2.2.14
@@ -48,7 +52,7 @@ INFO[0017] [ingress] removing installed ingress controller
 
 This can take a minute or two, but should eventually complete.
 
-Next, we will install metallb. To do this, we will use kustomize. Install kustomize if its not already present.
+Next, we will install metallb. To do this, we will use kustomize. Install kustomize if it's not already present.
 
 First lets generate the secret.
 
@@ -93,11 +97,14 @@ ingress-nginx   LoadBalancer   10.43.219.54   192.168.36.30   80:32538/TCP,443:3
 ```
 cd demo
 kustomize build . | kubectl apply -f -
+curl http://192.168.36.30
 ```
-
 
 
 ## References
 
-https://cncn.io/
-https://gitlab.com/monachus/channel.git
+- https://www.youtube.com/watch?v=iqVt5mbvlJ0&t=272s
+
+- https://gitlab.com/monachus/channel.git
+
+- https://cncn.io/
