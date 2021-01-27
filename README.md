@@ -6,6 +6,7 @@ This example is based on a video by Adrian Goins at https://www.youtube.com/watc
 
 ## Requirements
 
+- VirtualBox
 - vagrant 2.2.14
 - RKE 1.2.4
 
@@ -17,11 +18,30 @@ This example is based on a video by Adrian Goins at https://www.youtube.com/watc
   vagrant up
   ```
 
+  Networking mode is set to "DHCP". After the VM comes up, you can use the VirtualBox GUI to see the networking interfaces. There will be two: one interface uses NAT; the other will use the host-only adapter. 
+
+  If you SSH to the VM using `vagrant ssh` you should see that eth0 is the NAT interface while eth1 is the host-only adapter. We will use the IP address fro mthe host-only adapter. You can test this by SSH'ing diretly to the VM using the IP address. For example:
+
+  ```
+  ssh -i .vagrant/machines/default/virtualbox/private_key vagrant@172.28.128.10 hostname
+  kubemaster
+  ```
+
+
 2. Download RKE from https://github.com/rancher/rke/releases. 
+
+  ```
+  rke config
+  ```
+
+  Before running rke up, edit the generated cluster.yml and set ingress provider to "none" to remove the default ingress controller.
+
+3. Run rke up
 
   ```
   rke up
   ```
+
 
 3. Let's install rancher so we have a UI. To run rancher, we need to run a docker container inside the master node. This step only needs to be done once. Afterwards, you can just access rancher from the browser.
 

@@ -1,25 +1,43 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-
 Vagrant.configure("2") do |config|
 
-  config.vm.box = "centos/7"
+  config.vm.define "kubemaster" do |node|
+    node.vm.box = "centos/7"
+    node.vm.box_check_update = false
+    node.vm.network "private_network", ip: "172.28.128.10"
+
+    node.vm.provider "virtualbox" do |vb|
+      vb.name = "kubemaster"
+      vb.memory = 4096
+      vb.cpus = 2
+    end
+
+    node.vm.provision "shell", inline: <<-SHELL
+        yum update -y
+        yum install -y vim wget
+      SHELL
   
-  config.vm.provider "virtualbox" do |vb|
-    vb.name = "kubemaster"
-    vb.memory = 8192
-    vb.cpus = 4
+    node.vm.provision "shell", path: "bootstrap.sh"
   end
 
-  config.vm.hostname = "kubemaster"
-  config.vm.network "private_network", ip: "192.168.36.3"
+  config.vm.define "kubenode01" do |node|
+    node.vm.box = "centos/7"
+    node.vm.box_check_update = false
+    node.vm.network "private_network", ip: "172.28.128.11"
 
-  config.vm.provision "shell", inline: <<-SHELL
-    yum update -y
-    yum install -y vim wget
-  SHELL
+    node.vm.provider "virtualbox" do |vb|
+      vb.name = "kubenode01"
+      vb.memory = 4096
+      vb.cpus = 2
+    end
 
-  config.vm.provision "shell", path: "setup-docker.sh"
-  config.vm.provision "shell", path: "always-run.sh", run: "always"
+    node.vm.provision "shell", inline: <<-SHELL
+        yum update -y
+        yum install -y vim wget
+      SHELL
+  
+    node.vm.provision "shell", path: "bootstrap.sh"
+  end
 end

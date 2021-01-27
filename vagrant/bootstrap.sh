@@ -1,7 +1,10 @@
 #!/bin/sh
 
-# This script will install docker
+# Disable swap
+sed -i '/swap/d' /etc/fstab
+swapoff -a
 
+# Install docker
 DOCKER_VERSION=19.03.9
 
 yum -y install yum-utils
@@ -33,3 +36,4 @@ curl -X GET http://localhost:4243/images/json
 
 # Post networking setup required by RKE
 sysctl net.bridge.bridge-nf-call-iptables=1
+sysctl net.bridge.bridge-nf-call-ip6tables=1

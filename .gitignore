@@ -3,5 +3,5 @@ vagrant/hellorke.tar
 metallb/secret.yaml
 test.md
 cluster.rkestate
-cluster.yaml
+cluster.yml
 kube_config_cluster.yml
