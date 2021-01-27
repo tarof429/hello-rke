@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This example is based on a video by Adrian Goins at https://www.youtube.com/watch?v=iqVt5mbvlJ0&t=272s to setup metallb with Nginx and rancher. Some steps were added/modified for rke.
+This example is based on a video at https://www.youtube.com/watch?v=2SmYjj-GFnE
 
 ## Requirements
 
@@ -12,15 +12,17 @@ This example is based on a video by Adrian Goins at https://www.youtube.com/watc
 
 ## Setup
 
-1. Use vagrant to start the VM.
+1. Use vagrant to start the VMs. This setup consists of one master node and one worker node.
+
+But before you do this, here are some notes about networking. You must set the virtual box machines with a routable IP address. Otherwise you will have all kinds of problems. A quick way to do this is to configure the VMs to use DHCP. If you do this, then the VMs will have a routable IP. A better wsay is to bring up VirtualBox, go to File -> Host Network Manager, and look for a network with a check box next to DHCP. These networks are valid to use for your VM. 
+
+After configuring Vagrantfile, bring up the VMs.
 
   ```
   vagrant up
   ```
 
-  Networking mode is set to "DHCP". After the VM comes up, you can use the VirtualBox GUI to see the networking interfaces. There will be two: one interface uses NAT; the other will use the host-only adapter. 
-
-  If you SSH to the VM using `vagrant ssh` you should see that eth0 is the NAT interface while eth1 is the host-only adapter. We will use the IP address fro mthe host-only adapter. You can test this by SSH'ing diretly to the VM using the IP address. For example:
+  If you SSH to a VM using `vagrant ssh` you should see that eth0 is the NAT interface while eth1 is the host-only adapter. We will use the IP address of host-only adapter for our configuration of the nodes. You can test the connection to them by SSH'ing diretly to the VM using the IP address. For example:
 
   ```
   ssh -i .vagrant/machines/default/virtualbox/private_key vagrant@172.28.128.10 hostname
@@ -34,7 +36,7 @@ This example is based on a video by Adrian Goins at https://www.youtube.com/watc
   rke config
   ```
 
-  Before running rke up, edit the generated cluster.yml and set ingress provider to "none" to remove the default ingress controller.
+  Before running rke up, edit the generated cluster.yml and set ingress provider to "none" to remove the default ingress controller. (Step needed?)
 
 3. Run rke up
 
@@ -42,18 +44,7 @@ This example is based on a video by Adrian Goins at https://www.youtube.com/watc
   rke up
   ```
 
-
-3. Let's install rancher so we have a UI. To run rancher, we need to run a docker container inside the master node. This step only needs to be done once. Afterwards, you can just access rancher from the browser.
-
-```
-vagrant ssh -c "docker run -d --restart=unless-stopped -p 8080:8080 rancher/server"
-```
-
-4. Access rancher from the browser at http://192.168.36.3:8080. 
-
-6. Follow directions to register the master node with rancher 
-
-7. Copy kube_config_cluster.config to ~/.kube/config so kubectl will work properly.
+4. Copy kube_config_cluster.config to ~/.kube/config so kubectl will work properly.
 
 ```
 cp kube_config_cluster.yml ~/.kube/config
@@ -64,67 +55,61 @@ NAME           STATUS   ROLES                      AGE   VERSION
 
 ## Setup MetalLB
 
-1. First we must disable the default nginx controller. To do this, we have changed cluster.yml and set ingress provider to none. When you run rke up again, you should see the line:
+Setup metallb by following the instructions at https://metallb.universe.tf/. There is one configmap in t he metallb directory that can be used to create the configmap.
+
+Let's deploy nginx.
 
 ```
-INFO[0017] [ingress] removing installed ingress controller
+kubectl create deploy nginx --image=nginx
 ```
 
-This can take a minute or two, but should eventually complete.
-
-Next, we will install metallb. To do this, we will use kustomize. Install kustomize if it's not already present.
-
-First lets generate the secret.
+Next, create a service of type LoadBalancer.
 
 ```
-cd metallb
-sh ./generate-secret.sh
-
+kubectl expose deploy nginx --port=80 --type LoadBalancer
+service/nginx exposed
 ```
 
-Next, we use kustomize to build the objects and apply it using kubectl.
+If we check the service, we'll see nginx exposed with an external IP.
 
 ```
-kustomize build . | kubectl apply -f -
+$ kubectl get svc
+NAME         TYPE           CLUSTER-IP    EXTERNAL-IP      PORT(S)        AGE
+kubernetes   ClusterIP      10.43.0.1     <none>           443/TCP        31m
+nginx        LoadBalancer   10.43.197.0   172.28.128.240   80:31472/TCP   30s
 ```
 
-Afterwards metallb is running.
+We can use w3m which is a console based browser to view the nginx site.
 
 ```
-kubectl get pods -n metallb-system
-NAME                          READY   STATUS    RESTARTS   AGE
-controller-65db86ddc6-cw56q   1/1     Running   2          20h
-speaker-f6pb4                 1/1     Running   2          20h
+w3m http://172.28.128.240
 ```
 
-## Install nginx
+Let's deploy another nginx2.
 
 ```
-cd nginx
-kustomize build . | kubectl apply -f -
+kubectl create deploy nginx2 --image=nginx
 ```
 
-When we see the ingress-nginx service, we see that the service type is LoadBalancer.
+And expose it as a service.
 
 ```
-kubectl get svc --namespace ingress-nginx
-NAME            TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)                      AGE
-ingress-nginx   LoadBalancer   10.43.219.54   192.168.36.30   80:32538/TCP,443:30537/TCP   3m18s
+kubectl expose deploy nginx2 --port=80 --type LoadBalancer
 ```
 
-## Run demo
+We can see the service.
 
 ```
-cd demo
-kustomize build . | kubectl apply -f -
-curl http://192.168.36.30
+$ kubectl get svc
+NAME         TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)        AGE
+kubernetes   ClusterIP      10.43.0.1       <none>           443/TCP        38m
+nginx        LoadBalancer   10.43.197.0     172.28.128.240   80:31472/TCP   7m14s
+nginx2       LoadBalancer   10.43.156.189   172.28.128.241   80:31890/TCP   42s
 ```
 
+Again we casn use w3m to verify nginx.
 
-## References
+```
+w3m http://172.28.128.241
+```
 
-- https://www.youtube.com/watch?v=iqVt5mbvlJ0&t=272s
-
-- https://gitlab.com/monachus/channel.git
-
-- https://cncn.io/
